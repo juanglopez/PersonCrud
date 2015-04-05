@@ -1,0 +1,6 @@
+# Messages
+
+error.required=El campo es requerido.
+error.email=El formato de email es incorrecto.
+
+
