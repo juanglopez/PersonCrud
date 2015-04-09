@@ -9,7 +9,7 @@ create table person (
   email                     varchar(255),
   birthday                  varchar(255),
 
-  constraint pk_computer primary key (id))
+  constraint pk_person primary key (id))
 ;
 
 create sequence person_seq start with 1000;

@@ -1,18 +1,30 @@
 package models;
 
+import play.db.jpa.JPA;
+import play.libs.F.Function0;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import javax.persistence.Entity;
+import javax.persistence.EntityManager;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 
+import play.Logger;
 import play.data.format.Formats;
 import play.data.validation.Constraints;
 import play.db.jpa.JPA;
 import play.db.jpa.Transactional;
+import play.libs.Akka;
+import play.libs.F;
+import play.libs.Json;
+import play.libs.F.Promise;
+import play.mvc.Result;
 
 /**
  * Person entity managed by JPA
@@ -24,7 +36,7 @@ public class Person {
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "person_seq")
 	public Long id;
-	
+
 	@Constraints.Required
 	public String surName;
 
@@ -34,7 +46,6 @@ public class Person {
 	@Constraints.Email
 	public String email;
 
-	
 	public String birthday;
 
 	public Long getId() {
@@ -77,37 +88,110 @@ public class Person {
 		this.birthday = birthday;
 	}
 
-	/**
-	 * Insert this new computer.
-	 */
-	public void save() {
-		JPA.em().persist(this);
-	}
-	
-	@SuppressWarnings("unchecked")
-	public static List<Person> getPersonList() {
-		
-		return (List<Person>) JPA.em()
-							 .createQuery("from Person")
-							 .getResultList();
-	}
-	
-	 public static Person findById(Long id) {
-	        return JPA.em().find(Person.class, id);
-	    }
-	 
-	 /**
-	     * Delete this computer.
-	     */
-	    public void delete() {
-	        JPA.em().remove(this);
-	    }
-	    
-	    public void update(Long id) {
-	        this.id = id;
-	        JPA.em().merge(this);
-	    }
-	
+	public static Promise<Long> save(final Person person) {
+
+		return Promise.promise(new Function0<Long>() {
+			public Long apply() throws Throwable {
+
+				try {
+					return JPA.withTransaction(new Function0<Long>() {
+						public Long apply() throws Throwable {
+							EntityManager e = JPA.em();
+							e.persist(person);
+							return person.getId();
+
+						}
+					});
+				} catch (Throwable e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+		});
+
 	}
 
+	public static Promise<Person> findPerson(final Long personId) {
 
+		return Promise.promise(new Function0<Person>() {
+			public Person apply() throws Throwable {
+
+				try {
+					return JPA.withTransaction(new Function0<Person>() {
+						public Person apply() throws Throwable {
+							Person personResult = JPA.em().find(Person.class,
+									personId);
+
+							return personResult;
+						}
+					});
+				} catch (Throwable e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+		});
+
+	}
+
+	public static Promise<Long> delete(final Long personId) {
+
+		return Promise.promise(new Function0<Long>() {
+
+			public Long apply() throws Throwable {
+
+				try {
+						return JPA.withTransaction(new Function0<Long>() {
+						public Long apply() throws Throwable {
+							Person personResult = JPA.em().find(Person.class,personId);
+							
+							if (personResult != null){
+							   JPA.em().remove(personResult);
+							   return new Long(0);
+							
+							}
+							 return new Long(1); //error Message
+						}
+					});
+					
+					
+				} catch (Throwable e) {
+					e.printStackTrace();
+					return new Long(1); //error Message
+				}
+
+			}
+		});
+
+	}
+
+	
+	public static Promise<Long> update(final Person person) {
+
+		return Promise.promise(new Function0<Long>() {
+
+			public Long apply() throws Throwable {
+
+				try {
+						return JPA.withTransaction(new Function0<Long>() {
+								public Long apply() throws Throwable {
+									JPA.em().merge(person);
+									return new Long(0);
+								}
+
+
+					});
+
+				} catch (Throwable e) {
+					e.printStackTrace();
+					return new Long(1); //error Message
+
+				}
+				
+			}
+		});
+
+	}
+
+	
+}

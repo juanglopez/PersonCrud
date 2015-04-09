@@ -11,3 +11,7 @@ libraryDependencies ++= Seq(
   )
 
 playJavaSettings
+
+Keys.fork in (Test) := false
+
+javaOptions in Test += "-Dtest.timeout=1000000"
