@@ -55,17 +55,8 @@ public class ApplicationTest {
 		running(testServer(3333, fakeApplication()), new Runnable() {
 
 			public void run() {
-				Person person = new Person();
-				person.setName("nameTesti");
-				person.setSurName("surName");
-				JsonNode personAsJson = Json.toJson(person);
-				WS.Response response = WS.url("http://localhost:3333/person")
-						.post(personAsJson).get();
 
-				String id = (String) Json
-						.fromJson(response.asJson(), Map.class).get("id");
-
-				final Long idPerson = new Long(id);
+				final Long idPerson = new Long(1);
 
 				JPA.withTransaction(new play.libs.F.Callback0() {
 					@Override
@@ -76,7 +67,7 @@ public class ApplicationTest {
 
 						JsonNode personAsJson = Json.toJson(personCreated);
 						WS.Response response = WS
-								.url("http://localhost:3333/person")
+								.url("http://localhost:3333/person/"+idPerson)
 								.put(personAsJson).get();
 						assertThat(response.getStatus()).isEqualTo(OK);
 
@@ -102,14 +93,8 @@ public class ApplicationTest {
 		running(testServer(3333, fakeApplication()), new Runnable() {
 
 			public void run() {
-				Person person = new Person();
-				person.setName("nameTesti");
-				person.setSurName("surName");
-				JsonNode personAsJson = Json.toJson(person);
-				WS.Response response = WS.url("http://localhost:3333/person")
-						.post(personAsJson).get();
 
-				final Long id = Json.parse(response.getBody()).get("id").asLong();
+				final Long id = new Long(1);
 
 			    JPA.withTransaction(new play.libs.F.Callback0() {
 					@Override
@@ -138,14 +123,8 @@ public class ApplicationTest {
 		running(testServer(3333, fakeApplication()), new Runnable() {
 
 			public void run() {
-				Person person = new Person();
-				person.setName("nameTesti");
-				person.setSurName("surName");
-				JsonNode personAsJson = Json.toJson(person);
-				WS.Response response = WS.url("http://localhost:3333/person")
-						.post(personAsJson).get();
-
-				final Long id = Json.parse(response.getBody()).get("id").asLong();
+				
+				final Long id = new Long(1);
 
 			    JPA.withTransaction(new play.libs.F.Callback0() {
 					@Override
@@ -164,7 +143,7 @@ public class ApplicationTest {
 						Person personFound = JPA.em().find(Person.class,
 								id);
 						
-						assertThat(person.name).isEqualTo(personFound.name);
+						assertThat("Apple Inc.").isEqualTo(personFound.name);
 					}
 
 				});
@@ -239,7 +218,10 @@ public class ApplicationTest {
 				Person person = new Person();
 				person.setSurName("surName");
 				JsonNode personAsJson = Json.toJson(person);
-				WS.Response responseNullname = WS.url("http://localhost:3333/person")
+				
+				final Long idPerson = new Long(1);
+				
+				WS.Response responseNullname = WS.url("http://localhost:3333/person/"+idPerson)
 						.put(personAsJson).get();
 
 				assertThat(responseNullname.getStatus()).isEqualTo(BAD_REQUEST);
@@ -249,9 +231,9 @@ public class ApplicationTest {
 				person.setSurName(null);
 				personAsJson = Json.toJson(person);
 				
-				WS.Response responseNullSurname = WS.url("http://localhost:3333/person")
+				WS.Response responseNullSurname = WS.url("http://localhost:3333/person/"+idPerson)
 						.put(personAsJson).get();
-
+				
 				assertThat(responseNullSurname.getStatus()).isEqualTo(BAD_REQUEST);
 				assertThat(responseNullSurname.getBody()).isEqualTo("Objeto Persona incompleto.");
 	

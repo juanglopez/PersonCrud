@@ -1,12 +1,8 @@
 package models;
 
 import play.db.jpa.JPA;
+import play.libs.F.Function;
 import play.libs.F.Function0;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.Callable;
 
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
@@ -15,16 +11,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 
-import play.Logger;
-import play.data.format.Formats;
 import play.data.validation.Constraints;
-import play.db.jpa.JPA;
-import play.db.jpa.Transactional;
-import play.libs.Akka;
-import play.libs.F;
-import play.libs.Json;
 import play.libs.F.Promise;
-import play.mvc.Result;
 
 /**
  * Person entity managed by JPA
@@ -136,62 +124,62 @@ public class Person {
 
 	public static Promise<Long> delete(final Long personId) {
 
-		return Promise.promise(new Function0<Long>() {
+		Promise<Person> person = Person.findPerson(personId);
+		return person.map(new Function<Person,Long>() {
 
-			public Long apply() throws Throwable {
-
-				try {
+			@Override
+			public Long apply(final Person person) throws Throwable {
+				
+				if (person != null){
+					try {
 						return JPA.withTransaction(new Function0<Long>() {
 						public Long apply() throws Throwable {
-							Person personResult = JPA.em().find(Person.class,personId);
-							
-							if (personResult != null){
-							   JPA.em().remove(personResult);
-							   return new Long(0);
-							
-							}
-							 return new Long(1); //error Message
+						   Person temporalPerson = JPA.em().merge(person);
+						   JPA.em().remove(temporalPerson);
+						return new Long(0);
 						}
 					});
 					
 					
 				} catch (Throwable e) {
 					e.printStackTrace();
-					return new Long(1); //error Message
+			
 				}
-
+					
+				};
+				return new Long(1);
 			}
 		});
-
 	}
 
 	
 	public static Promise<Long> update(final Person person) {
 
-		return Promise.promise(new Function0<Long>() {
+		Promise<Person> personresult = Person.findPerson(person.getId());
+		return personresult.map(new Function<Person,Long>() {
 
-			public Long apply() throws Throwable {
-
-				try {
+			@Override
+			public Long apply(final Person person) throws Throwable {
+				
+				if (person != null){
+					try {
 						return JPA.withTransaction(new Function0<Long>() {
-								public Long apply() throws Throwable {
-									JPA.em().merge(person);
-									return new Long(0);
-								}
-
-
+						public Long apply() throws Throwable {
+						JPA.em().merge(person);
+						return new Long(0);
+						}
 					});
-
+					
+					
 				} catch (Throwable e) {
 					e.printStackTrace();
-					return new Long(1); //error Message
-
+		
 				}
-				
+					
+				};
+				return new Long(1);
 			}
 		});
-
 	}
-
 	
 }

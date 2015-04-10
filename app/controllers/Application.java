@@ -1,6 +1,5 @@
 package controllers;
 
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,10 +7,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import models.Person;
 import play.libs.F;
+import play.libs.F.Function0;
 import play.libs.Json;
+import play.libs.F.Function;
 import play.libs.F.Promise;
 import play.mvc.*;
-
 
 public class Application extends Controller {
 
@@ -19,27 +19,39 @@ public class Application extends Controller {
 	 * POST create Person
 	 * 
 	 */
-	@SuppressWarnings("deprecation")
-	public static Result create() {
+
+	public static Promise<Result> create() {
 
 		JsonNode json = request().body().asJson();
 		final Person person = Json.fromJson(json, Person.class);
+
 		if (person == null || person.getId() != null
 				|| person.getName() == null || person.getSurName() == null) {
-			return badRequest("Objeto Persona incompleto.");
+
+			return Promise.promise(new Function0<Result>() {
+				public Result apply() throws Throwable {
+
+					return badRequest("Objeto Persona incompleto.");
+				}
+			});
 		}
 
 		Promise<Long> promiseId = Person.save(person);
 
-		return async(promiseId.map(new F.Function<Long, Result>() {
+		return promiseId.map(new F.Function<Long, Result>() {
 
-			@Override
 			public Result apply(Long id) throws Throwable {
 				Map<String, String> resultMap = new HashMap<String, String>();
 				resultMap.put("id", id + "");
 				return created(Json.toJson(resultMap));
 			}
-		}));
+		}).recover(new F.Function<Throwable, Result>() {
+
+			@Override
+			public Result apply(Throwable arg0) throws Throwable {
+				return internalServerError();
+			}
+		});
 
 	}
 
@@ -47,33 +59,37 @@ public class Application extends Controller {
 	 * PUT update Person
 	 * 
 	 */
-	
-	@SuppressWarnings("deprecation")
-	public static Result update() {
-		
-				JsonNode json = request().body().asJson();
-				final Person person = Json.fromJson(json, Person.class);
 
-				if (person == null || person.getName() == null
-						|| person.getSurName() == null) {
+	public static Promise<Result> update(Long id) {
+
+		JsonNode json = request().body().asJson();
+		final Person person = Json.fromJson(json, Person.class);
+
+		if (person == null || person.getName() == null
+				|| person.getSurName() == null) {
+			
+			return Promise.promise(new Function0<Result>() {
+				public Result apply() throws Throwable {
+
 					return badRequest("Objeto Persona incompleto.");
 				}
+			});
+		}
 
-					Promise<Long> promiseStatus = Person.update(person);
-					return async(promiseStatus.map(new F.Function<Long, Result>() {
+		Promise<Long> promiseStatus = Person.update(person);
+		return promiseStatus.map(new F.Function<Long, Result>() {
 
-						@Override
-						public Result apply(Long id) throws Throwable {
-							
-							if (id.intValue() == 0) {
-								Map<String, String> resultMap = new HashMap<String, String>();
-								resultMap.put("id", person.getId().toString());
-								return ok(Json.toJson(resultMap));
-							}
-							return notFound("No existe la persona.");
-			            }
-					}));
-					
+			@Override
+			public Result apply(Long id) throws Throwable {
+
+				if (id.intValue() == 0) {
+					Map<String, String> resultMap = new HashMap<String, String>();
+					resultMap.put("id", person.getId().toString());
+					return ok(Json.toJson(resultMap));
+				}
+				return notFound("No existe la persona.");
+			}
+		});
 
 	}
 
@@ -82,21 +98,27 @@ public class Application extends Controller {
 	 * 
 	 */
 
-	@SuppressWarnings("deprecation")
-	public static Result delete(final Long id) {
-		
+
+	public static Promise<Result> delete(final Long id) {
+
 		Promise<Long> promiseStatus = Person.delete(id);
-		return async(promiseStatus.map(new F.Function<Long, Result>() {
+		return promiseStatus.map(new F.Function<Long, Result>() {
 
 			@Override
 			public Result apply(Long id) throws Throwable {
-				
+
 				if (id.intValue() == 0) {
 					return ok();
 				}
 				return notFound("No existe la persona.");
-            }
-		}));
+			}
+		}).recover(new Function<Throwable, Result>() {
+			@Override
+			public Result apply(Throwable e) throws Throwable {
+				return internalServerError();
+
+			}
+		});
 
 	}
 
@@ -105,11 +127,11 @@ public class Application extends Controller {
 	 * 
 	 */
 
-	@SuppressWarnings("deprecation")
-	public static Result findPersonById(final Long id) {
+
+	public static Promise<Result> findPersonById(final Long id) {
 
 		Promise<Person> promisePerson = Person.findPerson(id);
-		return async(promisePerson.map(new F.Function<Person, Result>() {
+		return promisePerson.map(new F.Function<Person, Result>() {
 
 			@Override
 			public Result apply(Person promisePerson) throws Throwable {
@@ -121,7 +143,13 @@ public class Application extends Controller {
 				}
 
 			}
-		}));
+		}).recover(new Function<Throwable, Result>() {
+			@Override
+			public Result apply(Throwable e) throws Throwable {
+				return internalServerError();
+
+			}
+		});
 
 	}
 
